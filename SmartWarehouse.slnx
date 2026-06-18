@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SmartWarehouse.API/SmartWarehouse.API.csproj" />
+  <Project Path="SmartWarehouse.Core/SmartWarehouse.Core.csproj" />
+  <Project Path="SmartWarehouse.Data/SmartWarehouse.Data.csproj" />
+  <Project Path="SmartWarehouse.Service/SmartWarehouse.Service.csproj" />
+</Solution>

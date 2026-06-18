@@ -1,0 +1,17 @@
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\bin\Debug\net10.0\SmartWarehouse.Service.deps.json
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\bin\Debug\net10.0\SmartWarehouse.Service.dll
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\bin\Debug\net10.0\SmartWarehouse.Service.pdb
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\bin\Debug\net10.0\SmartWarehouse.Core.dll
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\bin\Debug\net10.0\SmartWarehouse.Data.dll
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\bin\Debug\net10.0\SmartWarehouse.Core.pdb
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\bin\Debug\net10.0\SmartWarehouse.Data.pdb
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWarehouse.Service.csproj.AssemblyReference.cache
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWarehouse.Service.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWarehouse.Service.AssemblyInfoInputs.cache
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWarehouse.Service.AssemblyInfo.cs
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWarehouse.Service.csproj.CoreCompileInputs.cache
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWar.08154174.Up2Date
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWarehouse.Service.dll
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\refint\SmartWarehouse.Service.dll
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\SmartWarehouse.Service.pdb
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net10.0\ref\SmartWarehouse.Service.dll
