@@ -13,7 +13,8 @@ import {
   Skeleton,
   Button
 } from '@mui/material';
-import CountUp from 'react-countup';
+import CountUpModule from 'react-countup';
+const CountUp = (CountUpModule as { default?: typeof CountUpModule }).default || CountUpModule;
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
