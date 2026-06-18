@@ -24,10 +24,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IProductRepository, SmartWarehouse.Service.Repositories.Implementations.ProductRepository>();
 builder.Services.AddScoped<IZoneRepository, SmartWarehouse.Service.Repositories.Implementations.ZoneRepository>();
 builder.Services.AddScoped<IInventoryMovementRepository, SmartWarehouse.Service.Repositories.Implementations.InventoryMovementRepository>();
+builder.Services.AddScoped<ICategoryRepository, SmartWarehouse.Service.Repositories.Implementations.CategoryRepository>();
 
 builder.Services.AddScoped<IProductManager, ProductManager>();
 builder.Services.AddScoped<IZoneManager, ZoneManager>();
 builder.Services.AddScoped<IInventoryMovementManager, InventoryMovementManager>();
+builder.Services.AddScoped<ICategoryManager, CategoryManager>();
+
+builder.Services.AddScoped<IPersonnelRepository, PersonnelRepository>();
+builder.Services.AddScoped<IPersonnelManager, PersonnelManager>();
+builder.Services.AddScoped<ISmartManager, SmartManager>();
 
 
 // CORS for Frontend
@@ -70,9 +76,20 @@ using (var scope = app.Services.CreateScope())
     
     if (!context.Zones.Any(z => z.CompanyId == "COMPANY-ABC-123"))
     {
-        context.Zones.AddRange(
-            new SmartWarehouse.Core.Entities.Zone { Name = "A Rafı", Description = "Kuzey Depo", CompanyId = "COMPANY-ABC-123", Capacity = 500 },
-            new SmartWarehouse.Core.Entities.Zone { Name = "B Rafı", Description = "Güney Depo", CompanyId = "COMPANY-ABC-123", Capacity = 300 }
+        var zoneA = new SmartWarehouse.Core.Entities.Zone { Name = "A Rafı", Description = "Kuzey Depo", CompanyId = "COMPANY-ABC-123", Capacity = 500 };
+        var zoneB = new SmartWarehouse.Core.Entities.Zone { Name = "B Rafı", Description = "Güney Depo", CompanyId = "COMPANY-ABC-123", Capacity = 300 };
+        var zoneC = new SmartWarehouse.Core.Entities.Zone { Name = "C Rafı", Description = "Karantina Bölgesi", CompanyId = "COMPANY-ABC-123", Capacity = 50 };
+        var zoneD = new SmartWarehouse.Core.Entities.Zone { Name = "D Rafı", Description = "Hızlı Tüketim", CompanyId = "COMPANY-ABC-123", Capacity = 1000 };
+        
+        context.Zones.AddRange(zoneA, zoneB, zoneC, zoneD);
+        context.SaveChanges();
+
+        // Seed some products assigned to these zones
+        var category = context.Categories.First();
+        context.Products.AddRange(
+            new SmartWarehouse.Core.Entities.Product { Name = "Lojistik Koli M", SKU = "KOL-M-01", Description = "Orta Boy Taşıma Kolisi", CompanyId = "COMPANY-ABC-123", TotalStock = 250, CategoryId = category.Id, ZoneId = zoneA.Id },
+            new SmartWarehouse.Core.Entities.Product { Name = "Lojistik Koli L", SKU = "KOL-L-01", Description = "Büyük Boy Taşıma Kolisi", CompanyId = "COMPANY-ABC-123", TotalStock = 100, CategoryId = category.Id, ZoneId = zoneA.Id },
+            new SmartWarehouse.Core.Entities.Product { Name = "Palet Shrink", SKU = "SHR-100", Description = "Streç Film", CompanyId = "COMPANY-ABC-123", TotalStock = 50, CategoryId = category.Id, ZoneId = zoneB.Id }
         );
         context.SaveChanges();
     }

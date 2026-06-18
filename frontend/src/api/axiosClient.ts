@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Helper to convert PascalCase to camelCase
 const toCamelCase = (str: string) => {
   if (!str || typeof str !== 'string') return str;
+  if (str === 'SKU') return 'sku';
   return str.charAt(0).toLowerCase() + str.slice(1);
 };
 
@@ -54,15 +54,22 @@ axiosClient.interceptors.response.use(response => {
   // { success: true, data: [...], totalCount, page, pageSize, totalPages }
   const d = response.data as unknown;
 
-  if (typeof d === 'object' && d !== null && !Array.isArray(d)) {
-    const record = d as Record<string, unknown>;
+  if (typeof d === 'object' && d !== null) {
+    let shouldConvert = false;
 
-    // Convert only if it looks like an API wrapper or if there are PascalCase keys.
-    const keys = Object.keys(record);
-    const looksLikeApiWrapper = ['data', 'totalCount', 'page', 'pageSize', 'totalPages', 'success'].some(k => k in record);
-    const hasPascalCaseKeys = keys.some(k => /^[A-Z]/.test(k));
+    if (Array.isArray(d)) {
+      if (d.length > 0 && typeof d[0] === 'object' && d[0] !== null) {
+        shouldConvert = Object.keys(d[0]).some(k => /^[A-Z]/.test(k));
+      }
+    } else {
+      const record = d as Record<string, unknown>;
+      const keys = Object.keys(record);
+      const looksLikeApiWrapper = ['data', 'totalCount', 'page', 'pageSize', 'totalPages', 'success'].some(k => k in record);
+      const hasPascalCaseKeys = keys.some(k => /^[A-Z]/.test(k));
+      shouldConvert = looksLikeApiWrapper || hasPascalCaseKeys;
+    }
 
-    if (looksLikeApiWrapper || hasPascalCaseKeys) {
+    if (shouldConvert) {
       response.data = convertKeys(response.data, toCamelCase) as typeof response.data;
     }
   }

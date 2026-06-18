@@ -20,6 +20,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import HistoryIcon from '@mui/icons-material/History';
 import axiosClient from '../api/axiosClient';
 import { useNotification } from './useNotification';
 
@@ -39,10 +40,33 @@ interface Zone {
   description: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface Personnel {
+  id: number;
+  fullName: string;
+  title: string;
+}
+
+interface MovementHistory {
+  id: number;
+  type: number;
+  quantity: number;
+  zoneName: string;
+  fromZoneName?: string;
+  personnelName: string;
+  createdAt: string;
+}
+
 const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) => {
   const { showError, showSuccess } = useNotification();
   const [rows, setRows] = useState<Product[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [personnels, setPersonnels] = useState<Personnel[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 25 });
@@ -50,13 +74,19 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openMovementModal, setOpenMovementModal] = useState(false);
+  const [openHistoryModal, setOpenHistoryModal] = useState(false);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  
+  const [historyData, setHistoryData] = useState<MovementHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Ürün form state: zoneId dahil
-  const [formData, setFormData] = useState({ name: '', sku: '', description: '', categoryId: 1, zoneId: '' });
+  const [formData, setFormData] = useState({ name: '', sku: '', description: '', categoryId: '', zoneId: '' });
+  const [zoneSuggestionText, setZoneSuggestionText] = useState<string | null>(null);
+
   // Stok hareket state
-  const [movementData, setMovementData] = useState({ type: 1, quantity: 1, zoneId: '', fromZoneId: '', referenceNumber: '' });
+  const [movementData, setMovementData] = useState({ type: 1, quantity: 1, zoneId: '', fromZoneId: '', personnelName: '' });
 
   useEffect(() => {
     let active = true;
@@ -120,7 +150,28 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
         console.error(e);
       }
     };
+    
+    const fetchCategories = async () => {
+      try {
+        const res = await axiosClient.get('/categories', { params: { companyId: 'COMPANY-ABC-123' } });
+        setCategories(res.data.data || res.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    
+    const fetchPersonnels = async () => {
+      try {
+        const res = await axiosClient.get('/personnels', { params: { companyId: 'COMPANY-ABC-123' } });
+        setPersonnels(res.data.data || res.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
     fetchZones();
+    fetchCategories();
+    fetchPersonnels();
   }, []);
 
   // Raf adını ID'den bul
@@ -133,6 +184,15 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
     { field: 'id', headerName: 'ID', width: 70 },
     { field: 'name', headerName: 'Ürün Adı', flex: 1 },
     { field: 'sku', headerName: 'SKU', width: 120 },
+    { 
+      field: 'categoryId', 
+      headerName: 'Kategori', 
+      width: 130,
+      renderCell: (p) => {
+        const cat = categories.find(c => c.id === p.value);
+        return cat ? cat.name : p.value;
+      }
+    },
     {
       field: 'zoneId',
       headerName: 'Raf',
@@ -167,28 +227,27 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
               quantity: 1,
               zoneId: productZoneId,
               fromZoneId: '',
-              referenceNumber: ''
+              personnelName: ''
             });
 
             setOpenMovementModal(true);
+          }}
+        />,
+        <GridActionsCellItem
+          icon={<HistoryIcon color="secondary" />}
+          label="Geçmiş"
+          onClick={() => {
+            const product = params.row as Product;
+            setSelectedProduct(product);
+            setOpenHistoryModal(true);
+            fetchHistory(product.id);
           }}
         />,
 
         <GridActionsCellItem
           icon={<EditIcon color="primary" />}
           label="Düzenle"
-          onClick={() => {
-            const product = params.row as Product;
-            setSelectedProduct(product);
-            setFormData({
-              name: product.name,
-              sku: product.sku,
-              description: product.description,
-              categoryId: product.categoryId,
-              zoneId: product.zoneId?.toString() ?? ''
-            });
-            setOpenAddModal(true);
-          }}
+          onClick={() => handleOpenEdit(params.row as Product)}
         />,
         <GridActionsCellItem
           icon={<DeleteIcon color="error" />}
@@ -202,6 +261,19 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
     },
   ];
 
+  const handleOpenEdit = (product: Product) => {
+    setFormData({ 
+      name: product.name, 
+      sku: product.sku, 
+      description: product.description, 
+      categoryId: product.categoryId.toString(),
+      zoneId: product.zoneId ? product.zoneId.toString() : ''
+    });
+    setSelectedProduct(product);
+    setZoneSuggestionText(null);
+    setOpenAddModal(true);
+  };
+
   const handleSave = async () => {
     try {
       const payload = {
@@ -209,14 +281,16 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
         name: formData.name,
         sku: formData.sku,
         description: formData.description,
-        categoryId: formData.categoryId,
+        categoryId: Number(formData.categoryId) || 1,
         zoneId: formData.zoneId ? parseInt(formData.zoneId) : null
       };
 
       if (selectedProduct) {
         await axiosClient.post('/products/update', { id: selectedProduct.id, ...payload });
+        showSuccess('Ürün başarıyla güncellendi.');
       } else {
         await axiosClient.post('/products/create', payload);
+        showSuccess('Ürün başarıyla oluşturuldu.');
       }
       setOpenAddModal(false);
       setPaginationModel({ ...paginationModel });
@@ -236,6 +310,21 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
       onStatsChange?.();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchHistory = async (productId: number) => {
+    setHistoryLoading(true);
+    try {
+      const res = await axiosClient.get('/inventorymovements/history', {
+        params: { productId, companyId: 'COMPANY-ABC-123' }
+      });
+      setHistoryData(res.data || []);
+    } catch (e) {
+      console.error(e);
+      showError('Geçmiş yüklenirken bir hata oluştu.');
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -278,8 +367,8 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
         zoneId,
         fromZoneId,
         type: movementData.type,
-        quantity: movementData.quantity,
-        referenceNumber: movementData.referenceNumber
+        quantity: movementData.type === 3 ? selectedProduct.totalStock : movementData.quantity,
+        personnelName: movementData.personnelName
       });
 
       setOpenMovementModal(false);
@@ -315,7 +404,8 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
           variant="contained" 
           onClick={() => {
             setSelectedProduct(null);
-            setFormData({ name: '', sku: '', description: '', categoryId: 1, zoneId: '' });
+            setFormData({ name: '', sku: '', description: '', categoryId: '', zoneId: '' });
+            setZoneSuggestionText(null);
             setOpenAddModal(true);
           }}
         >
@@ -347,7 +437,39 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
           <TextField fullWidth label="Açıklama" multiline rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} sx={{ mb: 2 }} />
           
           {/* Raf Seçimi */}
-          <FormControl fullWidth sx={{ mb: 3 }}>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Kategori</InputLabel>
+            <Select
+              value={formData.categoryId}
+              label="Kategori"
+              onChange={async e => {
+                const newCat = e.target.value as string;
+                setFormData({ ...formData, categoryId: newCat });
+                // Akıllı Raf Önerisi Al
+                if (newCat) {
+                  try {
+                    const res = await axiosClient.get('/smart/suggest-zone', { params: { categoryId: newCat, companyId: 'COMPANY-ABC-123' } });
+                    if (res.data && res.data.recommendedZoneId) {
+                      setFormData(prev => ({ ...prev, zoneId: res.data.recommendedZoneId.toString() }));
+                      setZoneSuggestionText(`Akıllı Öneri: ${res.data.reason}`);
+                    }
+                  } catch (e) {
+                    console.error('Raf önerisi alınamadı', e);
+                    setZoneSuggestionText(null);
+                  }
+                }
+              }}
+            >
+              {categories.map(c => (
+                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+              ))}
+              {categories.length === 0 && (
+                <MenuItem disabled value="">Kategori bulunamadı</MenuItem>
+              )}
+            </Select>
+          </FormControl>
+          
+          <FormControl fullWidth sx={{ mb: 1 }}>
             <InputLabel>Raf / Depo Bölgesi</InputLabel>
             <Select
               value={formData.zoneId}
@@ -362,6 +484,11 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
               ))}
             </Select>
           </FormControl>
+          {zoneSuggestionText && (
+             <Typography variant="caption" color="success.main" sx={{ display: 'block', mb: 3 }}>
+                💡 {zoneSuggestionText}
+             </Typography>
+          )}
 
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, justifyContent: 'flex-end' }}>
             <Button variant="text" onClick={() => setOpenAddModal(false)}>İptal</Button>
@@ -479,15 +606,23 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
             />
           )}
 
-          <TextField 
-            fullWidth 
-            label="Referans No (Fatura / İrsaliye)" 
-            placeholder="Ör: FAT-2025-001"
-            helperText="İsteğe bağlı — bu harekete ait belge numarasını girin."
-            value={movementData.referenceNumber} 
-            onChange={e => setMovementData({...movementData, referenceNumber: e.target.value})} 
-            sx={{ mb: 3 }} 
-          />
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel>İşlemi Yapan Personel</InputLabel>
+            <Select
+              value={movementData.personnelName}
+              label="İşlemi Yapan Personel"
+              onChange={e => setMovementData({ ...movementData, personnelName: e.target.value as string })}
+            >
+              {personnels.map(p => (
+                <MenuItem key={p.id} value={p.fullName}>
+                  {p.fullName} - {p.title}
+                </MenuItem>
+              ))}
+              {personnels.length === 0 && (
+                <MenuItem disabled value="">Sistemde kayıtlı personel yok</MenuItem>
+              )}
+            </Select>
+          </FormControl>
 
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, justifyContent: 'flex-end' }}>
             <Button variant="text" onClick={() => setOpenMovementModal(false)}>İptal</Button>
@@ -513,6 +648,61 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
             <Button variant="text" onClick={() => setOpenDeleteModal(false)}>İptal</Button>
             <Button variant="contained" color="error" onClick={handleDelete}>Evet, Sil</Button>
           </Box>
+        </Box>
+      </Modal>
+
+      {/* --- Geçmiş Modal --- */}
+      <Modal open={openHistoryModal} onClose={() => setOpenHistoryModal(false)}>
+        <Box sx={{ ...modalStyle, width: 1000, maxWidth: '95vw' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              {selectedProduct?.name} - Stok Hareket Geçmişi
+            </Typography>
+            <Button onClick={() => setOpenHistoryModal(false)}>Kapat</Button>
+          </Box>
+          <div style={{ height: 400, width: '100%' }}>
+            <DataGrid
+              rows={historyData}
+              loading={historyLoading}
+              columns={[
+                { 
+                  field: 'createdAt', 
+                  headerName: 'Tarih / Saat', 
+                  width: 150,
+                  renderCell: (p) => {
+                    const date = new Date(p.value);
+                    return date.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  }
+                },
+                { 
+                  field: 'type', 
+                  headerName: 'İşlem', 
+                  width: 130,
+                  renderCell: (p) => {
+                    if (p.value === 1) return <Chip label="Giriş (In)" size="small" color="success" />;
+                    if (p.value === 2) return <Chip label="Çıkış (Out)" size="small" color="warning" />;
+                    if (p.value === 3) return <Chip label="Transfer" size="small" color="info" />;
+                    return p.value;
+                  }
+                },
+                { field: 'quantity', headerName: 'Miktar', width: 90 },
+                { 
+                  field: 'zoneName', 
+                  headerName: 'Raf (Hedef)', 
+                  width: 130 
+                },
+                { 
+                  field: 'fromZoneName', 
+                  headerName: 'Kaynak Raf', 
+                  width: 130,
+                  renderCell: (p) => p.value || '-'
+                },
+                { field: 'personnelName', headerName: 'İşlemi Yapan Personel', flex: 1, minWidth: 200 },
+              ]}
+              disableRowSelectionOnClick
+              hideFooter
+            />
+          </div>
         </Box>
       </Modal>
     </Box>

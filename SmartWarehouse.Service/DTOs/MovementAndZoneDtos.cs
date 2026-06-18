@@ -36,6 +36,6 @@ public class CreateInventoryMovementDto
     public int? FromZoneId { get; set; }     // Kaynak raf (sadece Transfer tipinde kullanılır)
     public MovementType Type { get; set; }
     public int Quantity { get; set; }
-    public string ReferenceNumber { get; set; } = string.Empty;
+    public string PersonnelName { get; set; } = string.Empty;
 }
 

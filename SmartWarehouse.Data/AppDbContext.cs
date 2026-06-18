@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<Product> Products { get; set; }
     public DbSet<Zone> Zones { get; set; }
     public DbSet<InventoryMovement> InventoryMovements { get; set; }
+    public DbSet<Personnel> Personnels { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +24,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Product>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Zone>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<InventoryMovement>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Personnel>().HasQueryFilter(e => !e.IsDeleted);
 
         // Product → Zone (varsayılan raf, isteğe bağlı)
         modelBuilder.Entity<Product>()

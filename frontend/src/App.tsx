@@ -20,6 +20,11 @@ import MapIcon from '@mui/icons-material/Map';
 import CategoryIcon from '@mui/icons-material/Category';
 import ProductManagement from './components/ProductManagement';
 import WarehouseMap from './components/WarehouseMap';
+import CategoryManagement from './components/CategoryManagement';
+import PersonnelManagement from './components/PersonnelManagement';
+import SmartAlerts from './components/SmartAlerts';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import PeopleIcon from '@mui/icons-material/People';
 import axiosClient from './api/axiosClient';
 
 interface DashboardStats {
@@ -64,19 +69,19 @@ function App() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsKey, setStatsKey] = useState(0);
 
-  // useCallback ile sarılarak dependency array'e eklenebilir
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await axiosClient.get('/dashboard/stats', { params: { companyId } });
-      setStats(res.data);
-    } catch (e) {
-      console.error('Stats fetch error:', e);
-    }
-  }, [companyId]);
-
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats, statsKey, tab]);
+    let ignore = false;
+    const loadStats = async () => {
+      try {
+        const res = await axiosClient.get('/dashboard/stats', { params: { companyId } });
+        if (!ignore) setStats(res.data);
+      } catch (e) {
+        console.error('Stats fetch error:', e);
+      }
+    };
+    void loadStats();
+    return () => { ignore = true; };
+  }, [companyId, statsKey, tab]);
 
   // Stok hareketi yapıldığında istatistikleri otomatik güncelle
   useEffect(() => {
@@ -108,6 +113,8 @@ function App() {
         >
           <Tab icon={<CategoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Ürün Yönetimi" />
           <Tab icon={<MapIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Depo Haritası" />
+          <Tab icon={<ViewListIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Kategori Yönetimi" />
+          <Tab icon={<PeopleIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Personel Yönetimi" />
         </Tabs>
       </AppBar>
 
@@ -149,7 +156,13 @@ function App() {
           </Grid>
 
           <Grid size={{ xs: 12 }}>
-            <Card sx={{ mt: 2 }}>
+            <Box sx={{ mt: 2 }}>
+              <SmartAlerts />
+            </Box>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <Card sx={{ mt: 1 }}>
               {tab === 0 && (
                 <Box sx={{ p: 2 }}>
                   <ProductManagement onStatsChange={() => setStatsKey(k => k + 1)} />
@@ -157,6 +170,16 @@ function App() {
               )}
               {tab === 1 && (
                 <WarehouseMap />
+              )}
+              {tab === 2 && (
+                <Box sx={{ p: 2 }}>
+                  <CategoryManagement />
+                </Box>
+              )}
+              {tab === 3 && (
+                <Box sx={{ p: 2 }}>
+                  <PersonnelManagement />
+                </Box>
               )}
             </Card>
           </Grid>

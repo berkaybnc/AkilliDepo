@@ -79,7 +79,7 @@ public class InventoryMovementManager : IInventoryMovementManager
                 FromZoneId = dto.FromZoneId,
                 Type = dto.Type,
                 Quantity = dto.Quantity,
-                ReferenceNumber = dto.ReferenceNumber,
+                PersonnelName = dto.PersonnelName,
                 CompanyId = dto.CompanyId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -114,6 +114,22 @@ public class InventoryMovementManager : IInventoryMovementManager
             throw;
         }
 
+    }
+
+    public async Task<List<MovementHistoryDto>> GetHistoryAsync(int productId, string companyId)
+    {
+        var movements = await _repository.GetHistoryByProductIdAsync(productId, companyId);
+        
+        return movements.Select(m => new MovementHistoryDto
+        {
+            Id = m.Id,
+            Type = m.Type,
+            Quantity = m.Quantity,
+            ZoneName = m.Zone?.Name ?? "Bilinmiyor",
+            FromZoneName = m.FromZone?.Name,
+            PersonnelName = m.PersonnelName,
+            CreatedAt = m.CreatedAt
+        }).ToList();
     }
 }
 

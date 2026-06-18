@@ -23,5 +23,5 @@ public class InventoryMovement : BaseEntity
     public MovementType Type { get; set; }
     public int Quantity { get; set; }
     
-    public string ReferenceNumber { get; set; } = string.Empty;
+    public string PersonnelName { get; set; } = string.Empty;
 }

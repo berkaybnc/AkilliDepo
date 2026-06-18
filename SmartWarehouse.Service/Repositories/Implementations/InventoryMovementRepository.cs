@@ -34,5 +34,14 @@ public class InventoryMovementRepository : IInventoryMovementRepository
         return true;
     }
 
+    public async Task<List<InventoryMovement>> GetHistoryByProductIdAsync(int productId, string companyId)
+    {
+        return await _context.InventoryMovements
+            .Include(m => m.Zone)
+            .Include(m => m.FromZone)
+            .Where(m => m.ProductId == productId && m.CompanyId == companyId)
+            .OrderByDescending(m => m.CreatedAt)
+            .ToListAsync();
+    }
 }
 

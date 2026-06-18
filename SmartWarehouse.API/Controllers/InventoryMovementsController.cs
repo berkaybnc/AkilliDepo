@@ -44,4 +44,24 @@ public class InventoryMovementsController : ControllerBase
         }
 
     }
+
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory([FromQuery] int productId, [FromQuery] string companyId)
+    {
+        if (string.IsNullOrEmpty(companyId)) return BadRequest();
+
+        try
+        {
+            var history = await _manager.GetHistoryAsync(productId, companyId);
+            return Ok(history);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
+    }
 }
