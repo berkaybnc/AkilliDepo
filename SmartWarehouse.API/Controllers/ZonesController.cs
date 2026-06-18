@@ -21,9 +21,17 @@ public class ZonesController : ControllerBase
         if (string.IsNullOrEmpty(companyId))
             return BadRequest(new { Message = "CompanyId is required." });
 
-        var result = await _manager.GetAllAsync(companyId);
-        return Ok(result);
+        try
+        {
+            var result = await _manager.GetAllAsync(companyId);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
+
 
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateZoneDto dto)

@@ -25,13 +25,23 @@ public class InventoryMovementsController : ControllerBase
             var success = await _manager.AddMovementAsync(dto);
             return Ok(new { Success = success });
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { Message = ex.Message });
         }
         catch (UnauthorizedAccessException)
         {
-            return StatusCode(403, "Company mismatch or access denied.");
+            return Forbid();
         }
+        catch (Exception ex)
+        {
+            // unexpected errors: 500 değil, UI'nin okuyabileceği hata ile 400 dönelim
+            return BadRequest(new { Message = ex.Message });
+        }
+
     }
 }

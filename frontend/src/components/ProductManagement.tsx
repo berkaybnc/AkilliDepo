@@ -67,7 +67,38 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
           params: { companyId: 'COMPANY-ABC-123', page: paginationModel.page + 1, pageSize: paginationModel.pageSize } 
         });
         if (active) {
-          setRows(response.data.data);
+          const raw = response.data.data ?? [];
+          // Backend DTO alan adları PascalCase olabiliyor (SKU gibi). DataGrid kolonları lower-case bekliyor.
+          console.log('RAW products[0]=', raw[0]);
+          console.log('RAW products[0] keys=', raw[0] ? Object.keys(raw[0]) : []);
+
+          const normalized: Product[] = raw.map((p: unknown) => {
+            const obj = p as Record<string, unknown>;
+            const sku =
+              (obj['sku'] as string | undefined) ??
+              (obj['SKU'] as string | undefined) ??
+              (obj['sKU'] as string | undefined) ??
+              '';
+            const name = (obj['name'] as string | undefined) ?? (obj['Name'] as string | undefined) ?? '';
+            const description = (obj['description'] as string | undefined) ?? (obj['Description'] as string | undefined) ?? '';
+            const categoryId = (obj['categoryId'] as number | undefined) ?? (obj['CategoryId'] as number | undefined) ?? 0;
+            const totalStock = (obj['totalStock'] as number | undefined) ?? (obj['TotalStock'] as number | undefined) ?? 0;
+            const zoneId = (obj['zoneId'] as number | undefined) ?? (obj['ZoneId'] as number | undefined) ?? undefined;
+
+            return {
+              ...(p as object),
+              sku,
+              name,
+              description,
+              categoryId,
+              totalStock,
+              zoneId
+            } as Product;
+          });
+
+          console.log('NORMALIZED products[0]=', normalized[0]);
+          console.log('NORMALIZED products[0].sku=', normalized[0]?.sku);
+          setRows(normalized);
           setTotalCount(response.data.totalCount);
         }
       } catch (err) {
@@ -127,13 +158,22 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
           onClick={() => {
             const product = params.row as Product;
             setSelectedProduct(product);
-            const preselectedZone = product.zoneId
-              ? product.zoneId.toString()
-              : (zones.length > 0 ? zones[0].id.toString() : '');
-            setMovementData({ type: 1, quantity: 1, zoneId: preselectedZone, fromZoneId: '', referenceNumber: '' });
+
+            // In/Out için: raf (zoneId) üründen otomatik gelsin ve değişmesin.
+            const productZoneId = product.zoneId?.toString() ?? (zones.length > 0 ? zones[0].id.toString() : '');
+
+            setMovementData({
+              type: 1,
+              quantity: 1,
+              zoneId: productZoneId,
+              fromZoneId: '',
+              referenceNumber: ''
+            });
+
             setOpenMovementModal(true);
           }}
         />,
+
         <GridActionsCellItem
           icon={<EditIcon color="primary" />}
           label="Düzenle"
@@ -205,21 +245,47 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
       return;
     }
     try {
-      if (selectedProduct && movementData.zoneId) {
-        await axiosClient.post('/inventorymovements/create', {
-          companyId: 'COMPANY-ABC-123',
-          productId: selectedProduct.id,
-          zoneId: parseInt(movementData.zoneId),
-          fromZoneId: movementData.type === 3 && movementData.fromZoneId ? parseInt(movementData.fromZoneId) : null,
-          type: movementData.type,
-          quantity: movementData.quantity,
-          referenceNumber: movementData.referenceNumber
-        });
-        setOpenMovementModal(false);
-        setPaginationModel({ ...paginationModel });
-        onStatsChange?.();
-        showSuccess('Stok hareketi başarıyla kaydedildi!');
+      if (!selectedProduct) return;
+
+      // UI validasyonu (özellikle transfer tipinde)
+      if (!movementData.zoneId) {
+        showError('Hedef raf (Zone) boş olamaz.');
+        return;
       }
+
+      if (movementData.type === 3) {
+        if (!movementData.fromZoneId) {
+          showError('Kaynak raf (FromZoneId) boş olamaz (Transfer için).');
+          return;
+        }
+        if (movementData.fromZoneId === movementData.zoneId) {
+          showError('Kaynak ve hedef raf aynı olamaz!');
+          return;
+        }
+      }
+
+      const zoneId = Number.parseInt(movementData.zoneId);
+      const fromZoneId = movementData.type === 3 ? Number.parseInt(movementData.fromZoneId) : null;
+
+      if (Number.isNaN(zoneId) || (movementData.type === 3 && fromZoneId !== null && Number.isNaN(fromZoneId))) {
+        showError('Raf seçimi geçersiz (ZoneId/FromZoneId).');
+        return;
+      }
+
+      await axiosClient.post('/inventorymovements/create', {
+        companyId: 'COMPANY-ABC-123',
+        productId: selectedProduct.id,
+        zoneId,
+        fromZoneId,
+        type: movementData.type,
+        quantity: movementData.quantity,
+        referenceNumber: movementData.referenceNumber
+      });
+
+      setOpenMovementModal(false);
+      setPaginationModel({ ...paginationModel });
+      onStatsChange?.();
+      showSuccess('Stok hareketi başarıyla kaydedildi!');
     } catch (err: unknown) {
       console.error(err);
       const msg = (err as { response?: { data?: { message?: string } } })
@@ -321,13 +387,27 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
               label="İşlem Tipi"
               onChange={e => {
                 const newType = Number(e.target.value);
-                // Transfer seçilince kaynak raf = mevcut raf, hedef raf = diğer raf
+
+                // In/Out: hedef raf = ürünün mevcut rafı (zoneId değişmesin)
                 const currentZone = selectedProduct?.zoneId?.toString() ?? (zones.length > 0 ? zones[0].id.toString() : '');
-                const otherZone = zones.find(z => z.id.toString() !== currentZone)?.id.toString() ?? '';
+                const otherZone = zones.find(z => z.id.toString() !== currentZone)?.id.toString() ?? currentZone;
+
                 if (newType === 3) {
-                  setMovementData({ ...movementData, type: newType, fromZoneId: currentZone, zoneId: otherZone });
+                  // Transfer: kaynak raf = ürünün mevcut rafı, hedef raf = diğer raf
+                  setMovementData({
+                    ...movementData,
+                    type: newType,
+                    fromZoneId: currentZone,
+                    zoneId: otherZone
+                  });
                 } else {
-                  setMovementData({ ...movementData, type: newType, fromZoneId: '' });
+                  // Transfer dışı: fromZoneId boş, zoneId ürün rafı kalsın
+                  setMovementData({
+                    ...movementData,
+                    type: newType,
+                    fromZoneId: '',
+                    zoneId: currentZone
+                  });
                 }
               }}
             >
@@ -336,6 +416,7 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
               <MenuItem value={3}>🔄 Raflar Arası Transfer</MenuItem>
             </Select>
           </FormControl>
+
 
           {/* Transfer: Kaynak Raf */}
           {movementData.type === 3 && (
@@ -364,7 +445,11 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
             <Select
               value={movementData.zoneId}
               label={movementData.type === 3 ? 'Hedef Raf (Nereye)' : 'Raf (Zone)'}
-              onChange={e => setMovementData({...movementData, zoneId: e.target.value as string})}
+              onChange={movementData.type === 3
+                ? (e) => setMovementData({ ...movementData, zoneId: e.target.value as string })
+                : undefined
+              }
+              disabled={movementData.type !== 3}
             >
               {zones.map(z => (
                 <MenuItem
@@ -380,6 +465,7 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
               ))}
             </Select>
           </FormControl>
+
 
           {movementData.type !== 3 && (
             <TextField 

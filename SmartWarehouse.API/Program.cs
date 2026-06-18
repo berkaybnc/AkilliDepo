@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using SmartWarehouse.Data;
 using SmartWarehouse.Service.Implementations;
 using SmartWarehouse.Service.Interfaces;
+using SmartWarehouse.Service.Repositories;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,9 +21,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ?? "Server=localhost;Database=SmartWarehouseDb;Trusted_Connection=True;MultipleActiveResultSets=true;Encrypt=False"));
 
 // DI container
+builder.Services.AddScoped<IProductRepository, SmartWarehouse.Service.Repositories.Implementations.ProductRepository>();
+builder.Services.AddScoped<IZoneRepository, SmartWarehouse.Service.Repositories.Implementations.ZoneRepository>();
+builder.Services.AddScoped<IInventoryMovementRepository, SmartWarehouse.Service.Repositories.Implementations.InventoryMovementRepository>();
+
 builder.Services.AddScoped<IProductManager, ProductManager>();
 builder.Services.AddScoped<IZoneManager, ZoneManager>();
 builder.Services.AddScoped<IInventoryMovementManager, InventoryMovementManager>();
+
 
 // CORS for Frontend
 builder.Services.AddCors(options =>

@@ -15,3 +15,4 @@ C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug
 C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net9.0\refint\SmartWarehouse.Service.dll
 C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net9.0\SmartWarehouse.Service.pdb
 C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net9.0\ref\SmartWarehouse.Service.dll
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Service\obj\Debug\net9.0\SmartWarehouse.Service.sourcelink.json

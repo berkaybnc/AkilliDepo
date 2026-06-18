@@ -3,30 +3,30 @@ using SmartWarehouse.Core.Entities;
 using SmartWarehouse.Data;
 using SmartWarehouse.Service.DTOs;
 using SmartWarehouse.Service.Interfaces;
+using SmartWarehouse.Service.Repositories;
+
 
 namespace SmartWarehouse.Service.Implementations;
 
 public class ProductManager : IProductManager
 {
     private readonly AppDbContext _context;
+    private readonly IProductRepository _repository;
 
-    public ProductManager(AppDbContext context)
+
+    public ProductManager(AppDbContext context, IProductRepository repository)
     {
         _context = context;
+        _repository = repository;
     }
 
     public async Task<PagedResult<ProductDto>> GetListAsync(PagedRequestDto request)
     {
-        var query = _context.Products.AsNoTracking()
-            .Where(x => x.CompanyId == request.CompanyId);
+        var (_, baseQuery) = await _repository.GetPagedBaseQueryAsync(request.CompanyId, request.SearchTerm);
+        var query = baseQuery;
 
-        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
-        {
-            query = query.Where(x => x.Name.Contains(request.SearchTerm) || x.SKU.Contains(request.SearchTerm));
-        }
+        var totalCount = query.Count();
 
-        var totalCount = await query.CountAsync();
-        
         var data = await query
             .OrderByDescending(x => x.CreatedAt)
             .Skip((request.Page - 1) * request.PageSize)
@@ -57,9 +57,7 @@ public class ProductManager : IProductManager
 
     public async Task<ProductDto?> GetByIdAsync(int id, string companyId)
     {
-        var entity = await _context.Products.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == companyId);
-
+        var entity = await _repository.GetByIdAsync(id, companyId);
         if (entity == null) return null;
 
         return new ProductDto
@@ -88,8 +86,7 @@ public class ProductManager : IProductManager
             TotalStock = 0
         };
 
-        _context.Products.Add(entity);
-        await _context.SaveChangesAsync();
+        await _repository.CreateAsync(entity);
 
         return new ProductDto
         {
@@ -106,37 +103,29 @@ public class ProductManager : IProductManager
 
     public async Task<bool> UpdateAsync(UpdateProductDto dto)
     {
-        var entity = await _context.Products.FirstOrDefaultAsync(x => x.Id == dto.Id);
-        
-        if (entity == null) return false;
-        if (entity.CompanyId != dto.CompanyId) throw new UnauthorizedAccessException("Company mismatch");
+        var entity = await _repository.GetByIdAsync(dto.Id, dto.CompanyId);
+        if (entity == null)
+        {
+            // Farklı tenant'ta kayıt olabilir -> 403 akışı için UnauthorizedAccessException.
+            var existingAnyCompany = await _context.Products.FirstOrDefaultAsync(x => x.Id == dto.Id);
+            if (existingAnyCompany != null && existingAnyCompany.CompanyId != dto.CompanyId)
+                throw new UnauthorizedAccessException("Company mismatch");
+
+            return false;
+        }
 
         entity.Name = dto.Name;
         entity.SKU = dto.SKU;
         entity.Description = dto.Description;
         entity.CategoryId = dto.CategoryId;
         entity.ZoneId = dto.ZoneId;
-        
-        // RULE 4: EntityState.Modified is mandatory
-        _context.Entry(entity).State = EntityState.Modified;
-        
-        await _context.SaveChangesAsync();
-        return true;
+
+        return await _repository.UpdateAsync(entity);
     }
 
     public async Task<bool> DeleteAsync(DeleteDto dto)
     {
-        var entity = await _context.Products.FirstOrDefaultAsync(x => x.Id == dto.Id);
-        
-        if (entity == null) return false;
-        if (entity.CompanyId != dto.CompanyId) throw new UnauthorizedAccessException("Company mismatch");
-
-        // Soft delete
-        entity.IsDeleted = true;
-        
-        _context.Entry(entity).State = EntityState.Modified;
-        await _context.SaveChangesAsync();
-        
-        return true;
+        return await _repository.SoftDeleteAsync(dto.Id, dto.CompanyId);
     }
 }
+

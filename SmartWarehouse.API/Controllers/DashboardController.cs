@@ -1,0 +1,58 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SmartWarehouse.Data;
+using SmartWarehouse.Service.DTOs;
+
+namespace SmartWarehouse.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class DashboardController : ControllerBase
+{
+    private readonly AppDbContext _context;
+
+    public DashboardController(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    [HttpGet("stats")]
+    public async Task<ActionResult<DashboardStatsDto>> GetStats([FromQuery] string companyId)
+    {
+        if (string.IsNullOrWhiteSpace(companyId))
+            return BadRequest(new { Message = "CompanyId is required." });
+
+        var totalProducts = await _context.Products
+            .Where(p => !p.IsDeleted && p.CompanyId == companyId)
+            .CountAsync();
+
+        // Bugün: UTC referansı ile sayma
+        var todayStartUtc = DateTime.UtcNow.Date;
+        var tomorrowStartUtc = todayStartUtc.AddDays(1);
+
+        var dailyIn = await _context.InventoryMovements
+            .Where(m => !m.IsDeleted && m.CompanyId == companyId && m.Type == SmartWarehouse.Core.Entities.MovementType.In)
+            .Where(m => m.CreatedAt >= todayStartUtc && m.CreatedAt < tomorrowStartUtc)
+            .SumAsync(m => (int?)m.Quantity) ?? 0;
+
+        var dailyOut = await _context.InventoryMovements
+            .Where(m => !m.IsDeleted && m.CompanyId == companyId && m.Type == SmartWarehouse.Core.Entities.MovementType.Out)
+            .Where(m => m.CreatedAt >= todayStartUtc && m.CreatedAt < tomorrowStartUtc)
+            .SumAsync(m => (int?)m.Quantity) ?? 0;
+
+
+        // Kritik stok: mevcut stok <= 10
+        var criticalStock = await _context.Products
+            .Where(p => !p.IsDeleted && p.CompanyId == companyId && p.TotalStock <= 10)
+            .CountAsync();
+
+        return Ok(new DashboardStatsDto
+        {
+            TotalProducts = totalProducts,
+            DailyIn = dailyIn,
+            DailyOut = dailyOut,
+            CriticalStock = criticalStock
+        });
+    }
+}
+

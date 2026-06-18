@@ -1,0 +1,12 @@
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\bin\Release\net9.0\SmartWarehouse.Core.deps.json
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\bin\Release\net9.0\SmartWarehouse.Core.dll
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\bin\Release\net9.0\SmartWarehouse.Core.pdb
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\SmartWarehouse.Core.GeneratedMSBuildEditorConfig.editorconfig
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\SmartWarehouse.Core.AssemblyInfoInputs.cache
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\SmartWarehouse.Core.AssemblyInfo.cs
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\SmartWarehouse.Core.csproj.CoreCompileInputs.cache
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\SmartWarehouse.Core.sourcelink.json
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\SmartWarehouse.Core.dll
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\refint\SmartWarehouse.Core.dll
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\SmartWarehouse.Core.pdb
+c:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.Core\obj\Release\net9.0\ref\SmartWarehouse.Core.dll
