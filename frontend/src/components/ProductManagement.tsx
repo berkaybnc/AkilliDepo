@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Button, 
@@ -17,6 +17,7 @@ import {
   type GridPaginationModel,
   GridActionsCellItem
 } from '@mui/x-data-grid';
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -61,7 +62,14 @@ interface MovementHistory {
   createdAt: string;
 }
 
-const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) => {
+interface ProductManagementProps {
+  onStatsChange?: () => void;
+  isSales?: boolean;
+  dashboardFilter?: string | null;
+  onClearFilter?: () => void;
+}
+
+const ProductManagement = ({ onStatsChange, isSales, dashboardFilter, onClearFilter }: ProductManagementProps) => {
   const { showError, showSuccess } = useNotification();
   const [rows, setRows] = useState<Product[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
@@ -88,58 +96,56 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
   // Stok hareket state
   const [movementData, setMovementData] = useState({ type: 1, quantity: 1, zoneId: '', fromZoneId: '', personnelName: '' });
 
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axiosClient.get('/products', { 
+        params: { 
+          companyId: 'COMPANY-ABC-123', 
+          page: paginationModel.page + 1, 
+          pageSize: paginationModel.pageSize,
+          filterType: dashboardFilter 
+        } 
+      });
+      const raw = response.data.data ?? [];
+
+      const normalized: Product[] = raw.map((p: unknown) => {
+        const obj = p as Record<string, unknown>;
+        const sku =
+          (obj['sku'] as string | undefined) ??
+          (obj['SKU'] as string | undefined) ??
+          (obj['sKU'] as string | undefined) ??
+          '';
+        const name = (obj['name'] as string | undefined) ?? (obj['Name'] as string | undefined) ?? '';
+        const description = (obj['description'] as string | undefined) ?? (obj['Description'] as string | undefined) ?? '';
+        const categoryId = (obj['categoryId'] as number | undefined) ?? (obj['CategoryId'] as number | undefined) ?? 0;
+        const totalStock = (obj['totalStock'] as number | undefined) ?? (obj['TotalStock'] as number | undefined) ?? 0;
+        const zoneId = (obj['zoneId'] as number | undefined) ?? (obj['ZoneId'] as number | undefined) ?? undefined;
+
+        return {
+          ...(p as object),
+          sku,
+          name,
+          description,
+          categoryId,
+          totalStock,
+          zoneId
+        } as Product;
+      });
+
+      setRows(normalized);
+      setTotalCount(response.data.totalCount);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [paginationModel.page, paginationModel.pageSize, dashboardFilter]);
+
   useEffect(() => {
-    let active = true;
-    const fetchProducts = async () => {
-      setLoading(true);
-      try {
-        const response = await axiosClient.get('/products', { 
-          params: { companyId: 'COMPANY-ABC-123', page: paginationModel.page + 1, pageSize: paginationModel.pageSize } 
-        });
-        if (active) {
-          const raw = response.data.data ?? [];
-          // Backend DTO alan adları PascalCase olabiliyor (SKU gibi). DataGrid kolonları lower-case bekliyor.
-          console.log('RAW products[0]=', raw[0]);
-          console.log('RAW products[0] keys=', raw[0] ? Object.keys(raw[0]) : []);
-
-          const normalized: Product[] = raw.map((p: unknown) => {
-            const obj = p as Record<string, unknown>;
-            const sku =
-              (obj['sku'] as string | undefined) ??
-              (obj['SKU'] as string | undefined) ??
-              (obj['sKU'] as string | undefined) ??
-              '';
-            const name = (obj['name'] as string | undefined) ?? (obj['Name'] as string | undefined) ?? '';
-            const description = (obj['description'] as string | undefined) ?? (obj['Description'] as string | undefined) ?? '';
-            const categoryId = (obj['categoryId'] as number | undefined) ?? (obj['CategoryId'] as number | undefined) ?? 0;
-            const totalStock = (obj['totalStock'] as number | undefined) ?? (obj['TotalStock'] as number | undefined) ?? 0;
-            const zoneId = (obj['zoneId'] as number | undefined) ?? (obj['ZoneId'] as number | undefined) ?? undefined;
-
-            return {
-              ...(p as object),
-              sku,
-              name,
-              description,
-              categoryId,
-              totalStock,
-              zoneId
-            } as Product;
-          });
-
-          console.log('NORMALIZED products[0]=', normalized[0]);
-          console.log('NORMALIZED products[0].sku=', normalized[0]?.sku);
-          setRows(normalized);
-          setTotalCount(response.data.totalCount);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
+    // eslint-disable-next-line
     fetchProducts();
-    return () => { active = false; };
-  }, [paginationModel]);
+  }, [fetchProducts]);
 
   useEffect(() => {
     const fetchZones = async () => {
@@ -210,54 +216,47 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
       field: 'actions',
       type: 'actions',
       headerName: 'İşlemler',
-      width: 150,
-      getActions: (params) => [
-        <GridActionsCellItem
-          icon={<SwapHorizIcon color="info" />}
-          label="Stok Hareketi"
-          onClick={() => {
-            const product = params.row as Product;
-            setSelectedProduct(product);
+      width: 180,
+      getActions: (params) => {
+        if (isSales) return [];
 
-            // In/Out için: raf (zoneId) üründen otomatik gelsin ve değişmesin.
-            const productZoneId = product.zoneId?.toString() ?? (zones.length > 0 ? zones[0].id.toString() : '');
-
-            setMovementData({
-              type: 1,
-              quantity: 1,
-              zoneId: productZoneId,
-              fromZoneId: '',
-              personnelName: ''
-            });
-
-            setOpenMovementModal(true);
-          }}
-        />,
-        <GridActionsCellItem
-          icon={<HistoryIcon color="secondary" />}
-          label="Geçmiş"
-          onClick={() => {
-            const product = params.row as Product;
-            setSelectedProduct(product);
-            setOpenHistoryModal(true);
-            fetchHistory(product.id);
-          }}
-        />,
-
-        <GridActionsCellItem
-          icon={<EditIcon color="primary" />}
-          label="Düzenle"
-          onClick={() => handleOpenEdit(params.row as Product)}
-        />,
-        <GridActionsCellItem
-          icon={<DeleteIcon color="error" />}
-          label="Sil"
-          onClick={() => {
-            setSelectedProduct(params.row as Product);
-            setOpenDeleteModal(true);
-          }}
-        />,
-      ],
+        return [
+          <GridActionsCellItem
+            icon={<SwapHorizIcon color="info" />}
+            label="Stok Hareketi"
+            onClick={() => {
+              const product = params.row as Product;
+              setSelectedProduct(product);
+              const productZoneId = product.zoneId?.toString() ?? (zones.length > 0 ? zones[0].id.toString() : '');
+              setMovementData({ type: 1, quantity: 1, zoneId: productZoneId, fromZoneId: '', personnelName: '' });
+              setOpenMovementModal(true);
+            }}
+          />,
+          <GridActionsCellItem
+            icon={<HistoryIcon color="secondary" />}
+            label="Geçmiş"
+            onClick={() => {
+              const product = params.row as Product;
+              setSelectedProduct(product);
+              setOpenHistoryModal(true);
+              fetchHistory(product.id);
+            }}
+          />,
+          <GridActionsCellItem
+            icon={<EditIcon color="primary" />}
+            label="Düzenle"
+            onClick={() => handleOpenEdit(params.row as Product)}
+          />,
+          <GridActionsCellItem
+            icon={<DeleteIcon color="error" />}
+            label="Sil"
+            onClick={() => {
+              setSelectedProduct(params.row as Product);
+              setOpenDeleteModal(true);
+            }}
+          />,
+        ];
+      },
     },
   ];
 
@@ -293,7 +292,7 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
         showSuccess('Ürün başarıyla oluşturuldu.');
       }
       setOpenAddModal(false);
-      setPaginationModel({ ...paginationModel });
+      fetchProducts();
       onStatsChange?.();
     } catch (err) {
       console.error(err);
@@ -306,7 +305,7 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
         await axiosClient.post('/products/delete', { id: selectedProduct.id, companyId: 'COMPANY-ABC-123' });
       }
       setOpenDeleteModal(false);
-      setPaginationModel({ ...paginationModel });
+      fetchProducts();
       onStatsChange?.();
     } catch (err) {
       console.error(err);
@@ -336,7 +335,6 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
     try {
       if (!selectedProduct) return;
 
-      // UI validasyonu (özellikle transfer tipinde)
       if (!movementData.zoneId) {
         showError('Hedef raf (Zone) boş olamaz.');
         return;
@@ -372,7 +370,7 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
       });
 
       setOpenMovementModal(false);
-      setPaginationModel({ ...paginationModel });
+      fetchProducts();
       onStatsChange?.();
       showSuccess('Stok hareketi başarıyla kaydedildi!');
     } catch (err: unknown) {
@@ -399,18 +397,32 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
   return (
     <Box sx={{ p: 3, backgroundColor: 'background.paper', borderRadius: 2 }}>
       <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Ürün Yönetimi</Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => {
-            setSelectedProduct(null);
-            setFormData({ name: '', sku: '', description: '', categoryId: '', zoneId: '' });
-            setZoneSuggestionText(null);
-            setOpenAddModal(true);
-          }}
-        >
-          Yeni Ürün Ekle
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+            Ürün Yönetimi
+          </Typography>
+          {dashboardFilter && (
+            <Chip 
+              label={`Filtre: ${dashboardFilter === 'critical' ? 'Kritik Stok' : dashboardFilter === 'dailyIn' ? 'Bugünkü Girişler' : 'Bugünkü Çıkışlar'}`} 
+              color="warning" 
+              onDelete={onClearFilter} 
+            />
+          )}
+        </Box>
+        {!isSales && (
+          <Button 
+            startIcon={<AddIcon />}
+            variant="contained" 
+            onClick={() => {
+              setSelectedProduct(null);
+              setFormData({ name: '', sku: '', description: '', categoryId: '', zoneId: '' });
+              setZoneSuggestionText(null);
+              setOpenAddModal(true);
+            }}
+          >
+            Yeni Ürün Ekle
+          </Button>
+        )}
       </Box>
       
       <div style={{ height: 600, width: '100%' }}>
@@ -436,7 +448,6 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
           <TextField fullWidth label="SKU" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} sx={{ mb: 2 }} />
           <TextField fullWidth label="Açıklama" multiline rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} sx={{ mb: 2 }} />
           
-          {/* Raf Seçimi */}
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Kategori</InputLabel>
             <Select
@@ -445,7 +456,6 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
               onChange={async e => {
                 const newCat = e.target.value as string;
                 setFormData({ ...formData, categoryId: newCat });
-                // Akıllı Raf Önerisi Al
                 if (newCat) {
                   try {
                     const res = await axiosClient.get('/smart/suggest-zone', { params: { categoryId: newCat, companyId: 'COMPANY-ABC-123' } });
@@ -514,13 +524,10 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
               label="İşlem Tipi"
               onChange={e => {
                 const newType = Number(e.target.value);
-
-                // In/Out: hedef raf = ürünün mevcut rafı (zoneId değişmesin)
                 const currentZone = selectedProduct?.zoneId?.toString() ?? (zones.length > 0 ? zones[0].id.toString() : '');
                 const otherZone = zones.find(z => z.id.toString() !== currentZone)?.id.toString() ?? currentZone;
 
                 if (newType === 3) {
-                  // Transfer: kaynak raf = ürünün mevcut rafı, hedef raf = diğer raf
                   setMovementData({
                     ...movementData,
                     type: newType,
@@ -528,7 +535,6 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
                     zoneId: otherZone
                   });
                 } else {
-                  // Transfer dışı: fromZoneId boş, zoneId ürün rafı kalsın
                   setMovementData({
                     ...movementData,
                     type: newType,
@@ -545,7 +551,6 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
           </FormControl>
 
 
-          {/* Transfer: Kaynak Raf */}
           {movementData.type === 3 && (
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Kaynak Raf (Nereden)</InputLabel>
@@ -566,7 +571,6 @@ const ProductManagement = ({ onStatsChange }: { onStatsChange?: () => void }) =>
             </FormControl>
           )}
 
-          {/* Hedef Raf (Transfer için "Nereye", diğerleri için normal "Raf") */}
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>{movementData.type === 3 ? 'Hedef Raf (Nereye)' : 'Raf (Zone)'}</InputLabel>
             <Select

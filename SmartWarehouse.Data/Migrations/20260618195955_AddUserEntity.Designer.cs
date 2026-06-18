@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartWarehouse.Data;
 
@@ -11,9 +12,11 @@ using SmartWarehouse.Data;
 namespace SmartWarehouse.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260618195955_AddUserEntity")]
+    partial class AddUserEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -259,17 +262,6 @@ namespace SmartWarehouse.Data.Migrations
                             PasswordHash = "123456",
                             Role = "SatisDanismani",
                             Username = "satici"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CompanyId = "COMPANY-ABC-123",
-                            CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            FullName = "Mehmet Müdür",
-                            IsDeleted = false,
-                            PasswordHash = "123456",
-                            Role = "MagazaMuduru",
-                            Username = "mudur"
                         });
                 });
 

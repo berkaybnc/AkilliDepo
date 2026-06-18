@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartWarehouse.Service.DTOs;
 using SmartWarehouse.Service.Interfaces;
 
 namespace SmartWarehouse.API.Controllers;
 
+[Authorize(Roles = "MagazaMuduru")]
 [ApiController]
 [Route("api/[controller]")]
 public class PersonnelsController : ControllerBase

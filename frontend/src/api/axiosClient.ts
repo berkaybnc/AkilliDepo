@@ -43,6 +43,12 @@ axiosClient.interceptors.request.use(config => {
     config.params = convertKeys(config.params, toPascalCase);
   }
 
+  // Add JWT token to Authorization header
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 

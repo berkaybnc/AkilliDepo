@@ -3,6 +3,9 @@ using SmartWarehouse.Data;
 using SmartWarehouse.Service.Implementations;
 using SmartWarehouse.Service.Interfaces;
 using SmartWarehouse.Service.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +37,7 @@ builder.Services.AddScoped<ICategoryManager, CategoryManager>();
 builder.Services.AddScoped<IPersonnelRepository, PersonnelRepository>();
 builder.Services.AddScoped<IPersonnelManager, PersonnelManager>();
 builder.Services.AddScoped<ISmartManager, SmartManager>();
+builder.Services.AddScoped<IAuthManager, AuthManager>();
 
 
 // CORS for Frontend
@@ -47,6 +51,26 @@ builder.Services.AddCors(options =>
     });
 });
 
+// JWT Authentication Configuration
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretKeyForSmartWarehouse!1234567890";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "SmartWarehouseApp";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "SmartWarehouseUsers";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -57,6 +81,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

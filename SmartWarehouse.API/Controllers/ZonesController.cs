@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartWarehouse.Service.DTOs;
 using SmartWarehouse.Service.Interfaces;
 
 namespace SmartWarehouse.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ZonesController : ControllerBase
@@ -33,6 +35,7 @@ public class ZonesController : ControllerBase
     }
 
 
+    [Authorize(Roles = "DepoGorevlisi")]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateZoneDto dto)
     {
@@ -43,6 +46,7 @@ public class ZonesController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "DepoGorevlisi")]
     [HttpPost("update")]
     public async Task<IActionResult> Update([FromBody] UpdateZoneDto dto)
     {
@@ -60,6 +64,7 @@ public class ZonesController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "DepoGorevlisi")]
     [HttpPost("delete")]
     public async Task<IActionResult> Delete([FromBody] DeleteDto dto)
     {

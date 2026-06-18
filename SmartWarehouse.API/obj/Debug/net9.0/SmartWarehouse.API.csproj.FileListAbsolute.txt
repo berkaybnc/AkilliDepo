@@ -158,3 +158,4 @@ C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.API\obj\Debug\net
 C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.API\obj\Debug\net9.0\SmartWarehouse.API.genruntimeconfig.cache
 C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.API\obj\Debug\net9.0\ref\SmartWarehouse.API.dll
 C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.API\obj\Debug\net9.0\SmartWarehouse.API.sourcelink.json
+C:\Users\berkay\Desktop\Akıllı Depo Yönetimi\SmartWarehouse.API\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll

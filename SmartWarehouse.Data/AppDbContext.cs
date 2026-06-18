@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Zone> Zones { get; set; }
     public DbSet<InventoryMovement> InventoryMovements { get; set; }
     public DbSet<Personnel> Personnels { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,6 +26,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Zone>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<InventoryMovement>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Personnel>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
 
         // Product → Zone (varsayılan raf, isteğe bağlı)
         modelBuilder.Entity<Product>()
@@ -48,6 +50,40 @@ public class AppDbContext : DbContext
             .HasForeignKey(im => im.FromZoneId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
+
+        // Seed Users
+        modelBuilder.Entity<User>().HasData(
+            new User 
+            { 
+                Id = 1, 
+                CompanyId = "COMPANY-ABC-123", 
+                Username = "admin", 
+                PasswordHash = "123456", // Test için düz metin
+                Role = "DepoGorevlisi", 
+                FullName = "Ahmet Depocu",
+                CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new User 
+            { 
+                Id = 2, 
+                CompanyId = "COMPANY-ABC-123", 
+                Username = "satici", 
+                PasswordHash = "123456", // Test için düz metin
+                Role = "SatisDanismani", 
+                FullName = "Ayşe Satış",
+                CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new User 
+            { 
+                Id = 3, 
+                CompanyId = "COMPANY-ABC-123", 
+                Username = "mudur", 
+                PasswordHash = "123456", // Test için düz metin
+                Role = "MagazaMuduru", 
+                FullName = "Mehmet Müdür",
+                CreatedAt = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

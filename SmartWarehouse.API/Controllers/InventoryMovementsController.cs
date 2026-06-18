@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartWarehouse.Service.DTOs;
 using SmartWarehouse.Service.Interfaces;
 
 namespace SmartWarehouse.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class InventoryMovementsController : ControllerBase
@@ -15,6 +17,7 @@ public class InventoryMovementsController : ControllerBase
         _manager = manager;
     }
 
+    [Authorize(Roles = "DepoGorevlisi")]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateInventoryMovementDto dto)
     {

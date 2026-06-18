@@ -25,6 +25,33 @@ public class ProductManager : IProductManager
         var (_, baseQuery) = await _repository.GetPagedBaseQueryAsync(request.CompanyId, request.SearchTerm);
         var query = baseQuery;
 
+        if (request.FilterType == "critical")
+        {
+            query = query.Where(x => x.TotalStock <= 10);
+        }
+        else if (request.FilterType == "dailyIn")
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+            var todayInProductIds = _context.InventoryMovements
+                .Where(m => !m.IsDeleted && m.CompanyId == request.CompanyId && m.Type == MovementType.In && m.CreatedAt >= today && m.CreatedAt < tomorrow)
+                .Select(m => m.ProductId)
+                .Distinct();
+            
+            query = query.Where(x => todayInProductIds.Contains(x.Id));
+        }
+        else if (request.FilterType == "dailyOut")
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+            var todayOutProductIds = _context.InventoryMovements
+                .Where(m => !m.IsDeleted && m.CompanyId == request.CompanyId && m.Type == MovementType.Out && m.CreatedAt >= today && m.CreatedAt < tomorrow)
+                .Select(m => m.ProductId)
+                .Distinct();
+            
+            query = query.Where(x => todayOutProductIds.Contains(x.Id));
+        }
+
         var totalCount = query.Count();
 
         var data = await query

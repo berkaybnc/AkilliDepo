@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartWarehouse.Service.DTOs;
 using SmartWarehouse.Service.Interfaces;
 
 namespace SmartWarehouse.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class CategoriesController : ControllerBase
@@ -24,6 +26,7 @@ public class CategoriesController : ControllerBase
         return Ok(new { success = true, data = result });
     }
 
+    [Authorize(Roles = "DepoGorevlisi")]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateCategoryDto dto)
     {
@@ -40,6 +43,7 @@ public class CategoriesController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "DepoGorevlisi")]
     [HttpPost("update")]
     public async Task<IActionResult> Update([FromBody] UpdateCategoryDto dto)
     {
@@ -60,6 +64,7 @@ public class CategoriesController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "DepoGorevlisi")]
     [HttpPost("delete")]
     public async Task<IActionResult> Delete([FromBody] DeleteDto dto)
     {
