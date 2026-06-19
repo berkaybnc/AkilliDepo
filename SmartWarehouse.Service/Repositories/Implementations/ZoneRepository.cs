@@ -51,5 +51,10 @@ public class ZoneRepository : IZoneRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExistsAsync(int id)
+    {
+        return await _context.Zones.AnyAsync(z => z.Id == id);
+    }
 }
 

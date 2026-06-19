@@ -58,8 +58,7 @@ public class ZoneManager : IZoneManager
         var entity = await _repository.GetByIdAsync(dto.Id, dto.CompanyId);
         if (entity == null)
         {
-            var existingAnyCompany = await _context.Zones.FirstOrDefaultAsync(z => z.Id == dto.Id);
-            if (existingAnyCompany != null && existingAnyCompany.CompanyId != dto.CompanyId)
+            if (await _repository.ExistsAsync(dto.Id))
                 throw new UnauthorizedAccessException("Company mismatch.");
 
             return false;
@@ -74,9 +73,14 @@ public class ZoneManager : IZoneManager
 
     public async Task<bool> DeleteAsync(DeleteDto dto)
     {
-        // Forbid akışı repository içinde company filter ile sağlanır.
-        // Mismatch durumunda 403 isteniyorsa repository'de UnauthorizedAccessException'a çevirmek gerekebilir.
-        return await _repository.SoftDeleteAsync(dto.Id, dto.CompanyId);
+        var success = await _repository.SoftDeleteAsync(dto.Id, dto.CompanyId);
+        if (!success)
+        {
+            if (await _repository.ExistsAsync(dto.Id))
+                throw new UnauthorizedAccessException("Company mismatch.");
+            return false;
+        }
+        return true;
     }
 }
 

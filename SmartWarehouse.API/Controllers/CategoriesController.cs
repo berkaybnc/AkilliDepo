@@ -70,9 +70,20 @@ public class CategoriesController : ControllerBase
     {
         if (string.IsNullOrEmpty(dto.CompanyId)) return BadRequest();
 
-        var success = await _manager.DeleteAsync(dto.Id, dto.CompanyId);
-        if (!success) return NotFound();
+        try
+        {
+            var success = await _manager.DeleteAsync(dto.Id, dto.CompanyId);
+            if (!success) return NotFound();
 
-        return Ok(new { success = true });
+            return Ok(new { success = true });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
     }
 }

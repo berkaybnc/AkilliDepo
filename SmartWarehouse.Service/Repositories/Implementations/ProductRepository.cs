@@ -59,5 +59,10 @@ public class ProductRepository : IProductRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExistsAsync(int id)
+    {
+        return await _context.Products.AnyAsync(p => p.Id == id);
+    }
 }
 

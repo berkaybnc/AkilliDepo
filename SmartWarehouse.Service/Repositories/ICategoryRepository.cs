@@ -8,4 +8,5 @@ public interface ICategoryRepository
     Task<Category?> GetByIdAsync(int id, string companyId);
     Task<Category> AddAsync(Category category);
     Task UpdateAsync(Category category);
+    Task<bool> ExistsAsync(int id);
 }

@@ -13,5 +13,7 @@ public interface IZoneRepository
     Task<bool> UpdateAsync(Zone entity);
 
     Task<bool> SoftDeleteAsync(int id, string companyId);
+
+    Task<bool> ExistsAsync(int id);
 }
 

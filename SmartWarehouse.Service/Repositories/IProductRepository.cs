@@ -13,5 +13,7 @@ public interface IProductRepository
     Task<bool> UpdateAsync(Product entity);
 
     Task<bool> SoftDeleteAsync(int id, string companyId);
+
+    Task<bool> ExistsAsync(int id);
 }
 

@@ -21,10 +21,20 @@ public class InventoryMovementManager : IInventoryMovementManager
     public async Task<bool> AddMovementAsync(CreateInventoryMovementDto dto)
     {
         var product = await _repository.GetProductAsync(dto.ProductId, dto.CompanyId);
-        if (product == null) throw new UnauthorizedAccessException("Product not found or access denied.");
+        if (product == null)
+        {
+            if (await _context.Products.AnyAsync(p => p.Id == dto.ProductId))
+                throw new UnauthorizedAccessException("Product Company mismatch.");
+            throw new Exception("Product not found.");
+        }
 
         var targetZone = await _repository.GetZoneAsync(dto.ZoneId, dto.CompanyId);
-        if (targetZone == null) throw new UnauthorizedAccessException("Target zone not found or access denied.");
+        if (targetZone == null)
+        {
+            if (await _context.Zones.AnyAsync(z => z.Id == dto.ZoneId))
+                throw new UnauthorizedAccessException("Zone Company mismatch.");
+            throw new Exception("Target zone not found.");
+        }
 
         // CompanyId mismatch kontrolü (dokümandaki Forbid(403) standardı için)
         // Manager çağırdığında repository zaten company filter uygular; burada exception mesajını standardize ediyoruz.
@@ -36,7 +46,11 @@ public class InventoryMovementManager : IInventoryMovementManager
 
             fromZone = await _repository.GetZoneAsync(dto.FromZoneId.Value, dto.CompanyId);
             if (fromZone == null)
-                throw new UnauthorizedAccessException("CompanyId mismatch (Source zone). Forbid.");
+            {
+                if (await _context.Zones.AnyAsync(z => z.Id == dto.FromZoneId.Value))
+                    throw new UnauthorizedAccessException("CompanyId mismatch (Source zone). Forbid.");
+                throw new Exception("Source zone not found.");
+            }
 
             if (dto.FromZoneId.Value == dto.ZoneId)
                 throw new InvalidOperationException("Kaynak ve hedef raf aynı olamaz.");
@@ -103,6 +117,7 @@ public class InventoryMovementManager : IInventoryMovementManager
             }
 
             await _context.InventoryMovements.AddAsync(movement);
+            _context.Entry(product).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();

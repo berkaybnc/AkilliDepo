@@ -67,7 +67,11 @@ public class CategoryManager : ICategoryManager
 
         var category = await _repository.GetByIdAsync(dto.Id, dto.CompanyId);
         if (category == null)
-            throw new UnauthorizedAccessException("Category not found or access denied.");
+        {
+            if (await _repository.ExistsAsync(dto.Id))
+                throw new UnauthorizedAccessException("Company mismatch");
+            throw new Exception("Category not found.");
+        }
 
         category.Name = dto.Name;
         category.Description = dto.Description;
@@ -85,7 +89,12 @@ public class CategoryManager : ICategoryManager
     public async Task<bool> DeleteAsync(int id, string companyId)
     {
         var category = await _repository.GetByIdAsync(id, companyId);
-        if (category == null) return false;
+        if (category == null)
+        {
+            if (await _repository.ExistsAsync(id))
+                throw new UnauthorizedAccessException("Company mismatch");
+            return false;
+        }
 
         category.IsDeleted = true;
         await _repository.UpdateAsync(category);

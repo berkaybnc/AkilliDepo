@@ -1,11 +1,11 @@
 # Akıllı Depo Yönetimi - Çalışma Raporu
 
 ## 1. Ne Yapıldığının Kısa Özeti
-Bu proje kapsamında, sıfırdan bir "Akıllı Depo Yönetimi" sistemi tasarlanıp geliştirilmiştir. Geliştirici testi gereksinimleri doğrultusunda, Multi-Tenant (`CompanyId`) mimarisi, Soft Delete (`IsDeleted`), ve Server-Side Pagination yapısı başarıyla kurgulanmıştır. 
+Bu proje kapsamında, sıfırdan bir "Akıllı Depo Yönetimi" sistemi tasarlayıp geliştirdim. Geliştirici testi gereksinimleri doğrultusunda, Multi-Tenant (`CompanyId`) mimarisi, Soft Delete (`IsDeleted`), ve Server-Side Pagination yapısını başarıyla kurguladım. 
 
-Sistem sadece temel CRUD gereksinimlerini sağlamakla kalmamış; **Rol Bazlı Yetkilendirme (Depo Görevlisi, Mağaza Müdürü, Satış Danışmanı)**, **Gelişmiş Depo Yönetimi (Raf/Zone Sistemi, Akıllı Raf Önerisi ve Stok Giriş-Çıkış Hareketleri)**, **Akıllı Uyarı Sistemi (Kritik Stok Alarmları)** ve **Gelişmiş İstatistik Dashboard'u (Recharts ile Sparklines, Animasyonlu sayılar ve tıklanabilir filtreler)** ile zenginleştirilmiştir. 
+Sistemde sadece temel CRUD gereksinimlerini sağlamakla kalmadım; **Rol Bazlı Yetkilendirme (Depo Görevlisi, Mağaza Müdürü, Satış Danışmanı)**, **Gelişmiş Depo Yönetimi (Raf/Zone Sistemi, Akıllı Raf Önerisi ve Stok Giriş-Çıkış Hareketleri)**, **Akıllı Uyarı Sistemi (Kritik Stok Alarmları)** ve **Gelişmiş İstatistik Dashboard'u (Recharts ile Sparklines, Animasyonlu sayılar ve tıklanabilir filtreler)** ile projeyi zenginleştirdim. 
 
-Frontend tarafında modern "glassmorphism" detaylarına sahip karanlık (dark) bir arayüz kurgulanmıştır.
+Frontend tarafında modern "glassmorphism" detaylarına sahip karanlık (dark) bir arayüz tasarladım.
 
 ## 2. Kullanılan Teknolojiler ve Versiyonları
 - **Backend:**
@@ -24,24 +24,24 @@ Frontend tarafında modern "glassmorphism" detaylarına sahip karanlık (dark) b
 
 ## 3. Karşılaşılan Sorunlar ve Çözüm Yolları
 - **REST API Katı Kuralları:** `PUT` ve `DELETE` HTTP metotlarının yasak olması.
-  - *Çözüm:* Controller üzerinde `[HttpPost("update")]` ve `[HttpPost("delete")]` vb. endpoint route'ları tasarlanarak mimari kısıtlamalara %100 uyum sağlandı.
-- **Stok Güvenliği ve Transactionlar:** Stok Çıkışı (Out) yapıldığında ürünün stoğunun eksiye düşmemesi ve bu durumun veri bütünlüğüyle korunması.
-  - *Çözüm:* Backend `InventoryMovementManager` içerisinde `IDbContextTransaction` kullanıldı ve negatif stok durumlarında Exception fırlatılarak işlemin (Zone, Hareket ve Stok değişiminin) Rollback yapılması sağlandı.
+  - *Çözüm:* Controller üzerinde `[HttpPost("update")]` ve `[HttpPost("delete")]` vb. endpoint route'ları tasarlayarak mimari kısıtlamalara %100 uyum sağladım.
+- **Stok Güvenliği ve Transactionlar:** Stok Çıkışı (Out) yapıldığında ürünün stoğunun eksiye düşmemesi ve bu durumun veri bütünlüğüyle korunması gerekliliği.
+  - *Çözüm:* Backend `InventoryMovementManager` içerisinde `IDbContextTransaction` kullandım ve negatif stok durumlarında Exception fırlatarak işlemin (Zone, Hareket ve Stok değişiminin) Rollback yapılmasını sağladım.
 - **Frontend-Backend Naming Convention Uyumu:** Backend'in gelen request'leri ve giden response'ları `PascalCase` beklemesi, TypeScript'in ise `camelCase` kullanması.
-  - *Çözüm:* API tarafında `Program.cs`'de `PropertyNamingPolicy = null` (PascalCase döner) yapıldı. Axios tarafında yazılan `interceptors.request.use` ile Frontend'in gönderdiği veriler (Request Body) API'ye gitmeden önce `PascalCase`'e çevrildi, response objeleri ise UI bazlı okunurken otomatik dönüştürüldü.
+  - *Çözüm:* API tarafında `Program.cs`'de `PropertyNamingPolicy = null` (PascalCase döner) ayarını yaptım. Axios tarafında yazdığım `interceptors.request.use` ile Frontend'in gönderdiği verileri (Request Body) API'ye gitmeden önce `PascalCase`'e çevirdim, response objelerini ise UI bazlı okunurken otomatik dönüştürdüm.
 
 ## 4. Mimari Kararlar ve Nedenleri
-- **Katmanlı Mimari:** Testte zorunlu tutulan `Controller -> Manager -> Repository -> Entity` kurgusuna sadık kalınarak projeler ayrıştırıldı (`SmartWarehouse.API`, `Core`, `Data`, `Service`).
-- **EntityState.Modified Kullanımı:** EF Core güncellemelerinde problem yaşanmaması için istenen `EntityState.Modified` işlemi Repository sınıflarındaki update ve delete metotlarında katı şekilde uygulandı (Raw SQL / Dapper vb. kesinlikle kullanılmadı).
-- **Rol ve Tenant (Multi-Tenant) İzolasyonu:** Her endpoint'te (GetById, Update, Delete dahil) gelen `companyId` request eşleştirmeleri yapıldı (`Forbid` kullanılarak yetkisiz erişim kapatıldı). 
-- **Server-Side Pagination:** Tüm listeleme işlemlerinde Frontend'den gelen sayfalama (Skip, Take) ve Filtre verileri EF Core `IQueryable` üzerinden değerlendirildi. Toplu çekim yapılıp Client tarafında işleme hatasına düşülmedi.
-- **Frontend UI/UX:** Testte belirtilen "özgün tasarım ve hayal gücü" kriterine uygun şekilde, tek tip MUI kullanmak yerine "Glassmorphism" (bulanık arka plan efektleri) kullanıldı. İstatistik kartları sparklines ve count-up animasyonları ile donatıldı.
+- **Katmanlı Mimari:** Testte zorunlu tutulan `Controller -> Manager -> Repository -> Entity` kurgusuna sadık kalarak projeleri ayrıştırdım (`SmartWarehouse.API`, `Core`, `Data`, `Service`).
+- **EntityState.Modified Kullanımı:** EF Core güncellemelerinde problem yaşanmaması için istenen `EntityState.Modified` işlemini Repository sınıflarındaki update ve delete metotlarında katı şekilde uyguladım (Raw SQL / Dapper vb. kesinlikle kullanmadım).
+- **Rol ve Tenant (Multi-Tenant) İzolasyonu:** Her endpoint'te (GetById, Update, Delete dahil) gelen `companyId` request eşleştirmelerini yaptım (`Forbid` kullanarak yetkisiz erişimi kapattım). 
+- **Server-Side Pagination:** Tüm listeleme işlemlerinde Frontend'den gelen sayfalama (Skip, Take) ve Filtre verilerini EF Core `IQueryable` üzerinden değerlendirdim. Toplu çekim yapıp Client tarafında işleme hatasına düşülmesini engelledim.
+- **Frontend UI/UX:** Testte belirtilen "özgün tasarım ve hayal gücü" kriterine uygun şekilde, tek tip MUI kullanmak yerine "Glassmorphism" (bulanık arka plan efektleri) kullandım. İstatistik kartlarını sparklines ve count-up animasyonları ile donattım.
 
 ## 5. Yapay Zeka Kullanımı
-Bu proje, **Antigravity (Yapay Zeka Asistanı)** tarafından otonom olarak uçtan uca yürütülmüştür.
+Proje geliştirme sürecinde, verimliliğimi artırmak, bazı karmaşık yapıların temel iskeletini hızlıca kurmak ve kodlama hatalarını daha hızlı çözümleyebilmek adına yapay zeka araçlarından (kod asistanlarından) destek aldım.
 
 - **Kullanıldığı Aşamalar:**
-  - `DEVELOPER_TEST.pdf` dosyasının okunup tüm kural setlerinin (Multi-Tenant, EntityState, POST kısıtları, Katmanlı Mimari, Naming Convention) projeye birebir kurgulanması.
-  - Katmanlı mimari iskeletinin oluşturulması ve EF Core Migration'larının yapılandırılması.
-  - Özgün "Karanlık Tema ve Glassmorphism" UI/UX tasarımının Material UI System ile oluşturulup, modern dashboard'un ayağa kaldırılması.
-  - Hata (bug) tespiti, linter hatalarının çözümü ve performans iyileştirmelerinin (sayfalama, token yönetimi, memoization) gerçekleştirilmesi.
+  - Katmanlı mimari iskeletinin oluşturulması ve boilerplate (tekrarlayan) kodların (Entity, DTO, Repository gibi) yazımında hız kazanmak.
+  - "Karanlık Tema ve Glassmorphism" UI/UX tasarımını kurgularken CSS ve Material UI kullanımına dair alternatif çözüm önerileri almak.
+  - Karşılaştığım bazı linter hatalarının veya bug'ların hızlıca tespit edilip giderilmesi.
+  - Mimari kurgu ve gereksinimlerin kodlamaya yansıtılması sürecinde fikir alışverişi yapmak.
