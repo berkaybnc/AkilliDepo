@@ -5,7 +5,7 @@ using SmartWarehouse.Service.Interfaces;
 
 namespace SmartWarehouse.API.Controllers;
 
-[Authorize(Roles = "MagazaMuduru")]
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class PersonnelsController : ControllerBase
@@ -18,6 +18,7 @@ public class PersonnelsController : ControllerBase
     }
 
     [HttpGet]
+    // Hem Mağaza Müdürü hem Depo Görevlisi personelleri listeleyebilsin (Stok hareketi yaparken vs.)
     public async Task<IActionResult> GetAll([FromQuery] string companyId)
     {
         if (string.IsNullOrEmpty(companyId)) return BadRequest("CompanyId gereklidir.");
@@ -25,6 +26,7 @@ public class PersonnelsController : ControllerBase
         return Ok(list);
     }
 
+    [Authorize(Roles = "MagazaMuduru")]
     [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreatePersonnelDto dto)
     {
@@ -40,6 +42,7 @@ public class PersonnelsController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "MagazaMuduru")]
     [HttpPost("update")]
     public async Task<IActionResult> Update([FromBody] UpdatePersonnelDto dto)
     {
@@ -55,6 +58,7 @@ public class PersonnelsController : ControllerBase
         }
     }
 
+    [Authorize(Roles = "MagazaMuduru")]
     [HttpPost("delete")]
     public async Task<IActionResult> Delete([FromBody] DeleteDto dto)
     {

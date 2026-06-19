@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartWarehouse.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1eb6c217421a0f41549897e173fd9e0bc93f35b7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c88b15a84008965f31caf186ee4a7354bb0294b7")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartWarehouse.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartWarehouse.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
